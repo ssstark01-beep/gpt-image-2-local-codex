@@ -1,37 +1,29 @@
 ---
 name: gpt-image-2-local-codex
-description: Generate GPT Image 2 images through the local Codex CLI, with Docker/hermes-agent setup notes, concise prompt-confirmation workflow, and ChatGPT session handling.
+description: Generate GPT Image 2 images through local Codex, with concise setup notes for Docker or direct install, scenario-based prompt choices, and safe auth checks.
 ---
 
 # GPT Image 2 via Local Codex
 
-Use this skill when the user explicitly wants GPT Image 2 / ChatGPT Images 2.0 generated through the local `codex` CLI.
-
-## When to use
-
-- The user says: `use GPT Image 2`, `gpt-image-2`, `ChatGPT Images 2.0`, or `image 2`
-- The user wants image-to-image editing or multi-reference composition
-- The user wants the local Codex-based workflow instead of another image model
+Use this skill when the user wants GPT Image 2 / ChatGPT Images 2.0 through the local `codex` CLI.
 
 ## Prerequisites
 
-- `codex` installed and on PATH
-- `python3` installed and on PATH
-- A logged-in ChatGPT account with image-generation entitlement
-- A persisted Codex session store, typically at `~/.codex/sessions` or `/opt/data/.codex/sessions`
+- `codex` on PATH
+- `python3` on PATH
+- ChatGPT account with image-generation access
+- A local Codex session store
 
-## Docker / hermes-agent quick install
+### Environment rule
 
-In a Dockerized `hermes-agent` environment, mount or copy this skill into the agent's skill directory, then make sure the container can reach the Codex auth/session directory.
+For the current Docker/hermes-agent setup, use:
 
-Minimal checklist:
+```bash
+HOME=/opt/data
+CODEX_HOME=/opt/data/.codex
+```
 
-1. Install the skill into the Hermes Agent skills path.
-2. Mount the Codex home directory if credentials already exist.
-3. Verify login inside the container.
-4. Run the generation helper after user confirmation.
-
-Example runtime setup:
+Do not treat a bare `codex login status` as authoritative in this environment. Verify auth with:
 
 ```bash
 HOME=/opt/data \
@@ -39,86 +31,76 @@ CODEX_HOME=/opt/data/.codex \
 codex login status
 ```
 
-If that returns logged in, generate images with:
+Only call the session unauthenticated if this command says so.
 
-```bash
-HOME=/opt/data \
-CODEX_HOME=/opt/data/.codex \
-bash scripts/gen.sh --prompt "<raw prompt>" --out /absolute/path/output.png
-```
+## Install / setup
 
-## Default interaction pattern
+### Docker / hermes-agent
 
-Before generating any image:
+Mount or copy this skill into the agent's skill directory, and make sure the container can access the Codex auth/session directory.
 
-1. Interpret the user's request.
-2. Propose **three scenario-based directions** by default.
-3. Convert the chosen direction into a prompt using the **six-dimensional image method**.
-4. Ask the user to confirm the方案 before running generation.
-5. Only generate after the user explicitly chooses or approves a direction.
+### Direct install (non-Docker)
 
-If the user already gave a very specific direction and wants to skip choices, you may proceed directly, but the default behavior is still to present three directions first.
+Copy the skill into the local Hermes Agent skills directory and use the machine's real Codex home. Do not assume `/opt/data/.codex` unless that is the actual session location on that machine.
 
-## Three-direction default template
+## Default workflow
 
-Choose the three directions based on the user's scenario, not just abstract style words.
+1. Understand the request.
+2. Offer **3 scenario-based directions**.
+3. Turn the chosen direction into a prompt with the **six-dimensional image method**.
+4. Ask for confirmation.
+5. Generate only after the user agrees.
 
-Common scene sets:
+## Three-direction template
 
-- **Social media**: catchy cover / clear message / high shareability
-- **GitHub or docs**: readable / structured / utility-oriented
-- **Product intro**: benefit-led / polished / brand-forward
-- **Educational**: explanatory / layered / easy to learn
-- **Technical architecture**: modular / flow-based / component clarity
-- **Comparison chart**: side-by-side / matrix / conclusion-driven
-- **Poster / event**: strong mood / visual punch / attention-grabbing
-- **Card grid**: consistent items / scan-friendly / compact copy
+Choose the options based on the use case, not just abstract style words.
+
+Common scenarios:
+- Social media: catchy / clear / shareable
+- GitHub / docs: readable / structured / practical
+- Product image: polished / premium / branded
+- Educational: explanatory / layered / easy to learn
+- Technical diagram: modular / flow-based / clear relationships
+- Comparison chart: side-by-side / matrix / conclusion-driven
 
 Example technical trio:
-
-- **Clear structure version**
-- **Teaching/explainer version**
-- **High-impact visual version**
+- Clear structure
+- Teaching/explainer
+- High-impact visual
 
 ## Six-dimensional image method
 
-Use a compact prompt skeleton with these six dimensions:
+Keep prompts short but concrete:
 
 1. **Subject** — what is being drawn
-2. **Scene / composition** — how the image is laid out
-3. **Style / medium** — what the image looks like visually
-4. **Color / lighting** — palette, mood, contrast, gradients, glow
-5. **Details / labels** — titles, annotations, icons, arrows, step labels
-6. **Output constraints** — aspect ratio, language, readability, negative constraints
+2. **Scene / composition** — layout, framing, grouping
+3. **Style / medium** — infographic, cartoon, poster, schematic, etc.
+4. **Color / lighting** — palette, mood, gradients, glow, contrast
+5. **Details / labels** — titles, arrows, notes, icons, numbered steps
+6. **Output constraints** — ratio, language, readability, negative constraints
 
-Keep each dimension short but concrete. Adapt emphasis to the use case:
+## Confirmation format
 
-- Social media: stronger color and composition
-- GitHub/docs: stronger readability and structure
-- Product graphics: stronger polish and hierarchy
+When asking the user to confirm, show:
 
-## Prompt preview format
+- Direction: A / B / C
+- Use case: social / docs / educational / product / poster / comparison
+- Six-dimension prompt:
+  - Subject
+  - Scene
+  - Style
+  - Color
+  - Details
+  - Constraints
+- Final output: poster / infographic / tutorial / social image / other
 
-When asking for confirmation, show a compact preview like this:
+Then ask one question:
 
-- **Direction**: A / B / C
-- **Use case**: social / docs / educational / product / poster / comparison
-- **Six-dimension prompt**:
-  - Subject: ...
-  - Scene: ...
-  - Style: ...
-  - Color: ...
-  - Details: ...
-  - Constraints: ...
-- **Final output**: poster / infographic / tutorial / social image / other
-
-Then ask a single confirmation question:
-
-> Which direction do you want? I will generate after you confirm.
+> Which direction do you want? I’ll generate after you confirm.
 
 ## GitHub publishing mode
 
-If the user asks to publish or document the project for GitHub, provide both Chinese and English sections in the response:
+If the user asks to publish or document the project for GitHub, provide both Chinese and English sections:
 
 - Project overview
 - Architecture overview
@@ -127,7 +109,7 @@ If the user asks to publish or document the project for GitHub, provide both Chi
 - Technical highlights
 - Copy-ready README text
 
-## Generation flow
+## Generation
 
 Use the helper script after confirmation:
 
@@ -149,29 +131,14 @@ bash scripts/gen.sh \
 
 ## Common pitfalls
 
-- `codex: command not found` means the CLI is missing or not on PATH.
-- `codex login status -> Not logged in` means the session is not authenticated yet.
-- `401 Unauthorized` during `codex exec` usually means the ChatGPT/Codex auth is missing or expired.
-- If browser-based auth is blocked, finish login locally on the machine instead of assuming the session can complete it.
-- If `image_generation` is disabled, the session may run but never produce an image payload.
+- `codex: command not found` → CLI missing or not on PATH
+- `codex login status -> Not logged in` → session not authenticated
+- `401 Unauthorized` → auth expired or missing
+- Bare `codex login status` can mislead in this environment
+- Browser auth may be blocked; finish login locally if needed
+- If `image_generation` is disabled, no image payload may be produced
 
 ## Verification
 
-After a successful run:
-
-- Confirm the output file exists and is a valid image
-- If the script prints a path, still verify the file on disk
-- Prefer to attach or show the generated image, not just report success
-
-## Failure handling
-
-When something fails, name the broken layer briefly:
-
-- CLI missing
-- not logged in
-- auth expired
-- feature flag unavailable
-- no image payload extracted
-- reference file missing
-
-Avoid dumping long raw stderr unless the user asks for diagnostics.
+Before concluding auth is missing, run the env-aware login check above.
+After generation, confirm the output file exists and is a valid image.
